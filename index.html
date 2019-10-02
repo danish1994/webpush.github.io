@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Web Push Notification</title>
+</head>
+<body>
+<script src="https://www.gstatic.com/firebasejs/7.0.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/7.0.0/firebase-messaging.js"></script>
+
+<script>
+    if ('serviceWorker' in navigator) {
+        // navigator.serviceWorker
+        //     .register('/sw.js')
+        //     .then();
+    }
+
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyAw6z52lCK6UIPjZT215DBJ6ynSQ8zR6aQ",
+        authDomain: "webpushtest-92c87.firebaseapp.com",
+        databaseURL: "https://webpushtest-92c87.firebaseio.com",
+        projectId: "webpushtest-92c87",
+        storageBucket: "",
+        messagingSenderId: "999079269178",
+        appId: "1:999079269178:web:9eb81c78959ffc6c6d7603"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+
+    const key = 'BI5SYBsrYLwRRjJsr-GW0KEtcbpCxxR0ONR1OHr0diMzfjSQ-PFy5JTNx9VfdA7c8BoCeLDNw0xuO-Zei1ZD1PY';
+    const topic = 'webPush';
+    const serverKey = 'AAAA6J3D0zo:APA91bFiBPtVUh0Q550Yq-b3aHWE41FN0QerClAo45VGoaqIm4dfL4oz8BRc6ejuhFtGEHWFaE3UilqrWkzxhCmDy7Ie1hgd4v12BfinrBGQu_dzQrNCFL1pHGIw_KwfWe3jybTFMbv-';
+
+    const messaging = firebase.messaging();
+    messaging.usePublicVapidKey(key);
+
+    const TOKEN_NAME = 'token';
+
+    const sendTokenToServer = (token) => {
+        localStorage.setItem(TOKEN_NAME, token);
+    };
+
+    const requestPermission = async () => {
+        try {
+            const permission = await Notification.requestPermission();
+            if (permission === 'granted') {
+                console.log('Notification permission granted.');
+                setTimeout(async () => {
+                    await getToken();
+                }, 5000);
+            } else {
+                console.log('Unable to get permission to notify.');
+            }
+        } catch (e) {
+            console.log('Unable to retrieve refreshed token ', e);
+        }
+    };
+
+    const getToken = async () => {
+        try {
+            const currentToken = await messaging.getToken();
+            if (currentToken) {
+                sendTokenToServer(currentToken);
+                await subscribeTokenToTopic(currentToken, topic);
+            } else {
+                console.log('No Instance ID token available. Request permission to generate one.');
+            }
+        } catch (e) {
+            console.log('An error occurred while retrieving token. ', e);
+        }
+    };
+
+    const subscribeTokenToTopic = async (token, topic) => {
+        try {
+            const response = await fetch('https://iid.googleapis.com/iid/v1/' + token + '/rel/topics/' + topic, {
+                method: 'POST',
+                headers: new Headers({
+                    'Authorization': 'key=' + serverKey
+                })
+            });
+
+            console.log('Subscribed to Topic:', topic);
+        } catch (e) {
+            console.log('Subscription Error', e);
+        }
+    };
+
+
+    requestPermission()
+        .then(() => {
+            setTimeout(() => {
+                // new Notification("Hi there!");
+            }, 10000)
+        })
+        .catch((e) => {
+            console.log(e);
+        });
+
+    messaging.onMessage((payload) => {
+        console.log('Message received. ', payload);
+        // ...
+    });
+</script>
+
+</body>
+</html>
